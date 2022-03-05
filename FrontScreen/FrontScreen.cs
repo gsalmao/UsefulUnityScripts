@@ -6,7 +6,7 @@ using DG.Tweening;
 
 /*
  * 
- *          THIS SCRIPT USES ODIN INSPECTOR AND DOTWEEN
+ *          THIS SCRIPT USES GAME EVENTS, ODIN INSPECTOR AND DOTWEEN
  * 
  */
 
@@ -48,8 +48,6 @@ public class FrontScreen : MonoBehaviour
     [SerializeField] private GameEvent OnHideFrontImageEnd;
 
     private FrontScreenSetup curScreen;
-    //If you try to call before the animation is finished, it won't work.
-    private bool animating = false;
 
     private void Awake()
     {
@@ -61,19 +59,16 @@ public class FrontScreen : MonoBehaviour
 
     private IEnumerator screenAnim(GameEvent eventBegin, GameEvent eventEnd, Color colorBegin, Color colorEnd, Image imageToAnimate, float time)
     {
-        animating = true;
         eventBegin.Invoke();
-
         imageToAnimate.color = colorBegin;
         imageToAnimate.DOColor(colorEnd, time);
         yield return new WaitForSecondsRealtime(time);
-
         eventEnd.Invoke();
-        animating = false;
     }
 
     [HorizontalGroup("Buttons")]
     [VerticalGroup("Buttons/Left")]
+    [GUIColor(0f,1f,0f)]
     [Button("Fade-In")]
     public void FadeIn()
     {
@@ -86,6 +81,7 @@ public class FrontScreen : MonoBehaviour
     }
 
     [VerticalGroup("Buttons/Right")]
+    [GUIColor(0f, 1f, 0f)]
     [Button("Fade-Out")]
     public void FadeOut()
     {
@@ -98,6 +94,7 @@ public class FrontScreen : MonoBehaviour
     }
 
     [VerticalGroup("Buttons/Left")]
+    [GUIColor(0f, 1f, 0f)]
     [Button("Show Front Image")]
     public void ShowFrontImage()
     {
@@ -110,12 +107,14 @@ public class FrontScreen : MonoBehaviour
     }
 
     [VerticalGroup("Buttons/Right")]
+    [GUIColor(0f, 1f, 0f)]
     [Button("Hide Front Image")]
     public void HideFrontImage()
     {
         StartCoroutine(screenAnim(OnHideFrontImageBegin, OnHideFrontImageEnd, Color.white, Color.clear, image, curScreen.hideImageTime));
     }
 
+    [GUIColor(0f, 1f, 0f)]
     [Button("Set New Front Screen")]
     public void SetNewFrontScreen(FrontScreenSetup newFrontScreen)
     {
@@ -123,6 +122,7 @@ public class FrontScreen : MonoBehaviour
         image.sprite    = newFrontScreen.imageSprite;
     }
 
+    [GUIColor(0f, 1f, 0f)]
     [Button("Default Front Screen")]
     public void ResetToDefaultFrontScreen()
     {

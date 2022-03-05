@@ -3,11 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEditor;
 
 /*
  * 
- *          THIS SCRIPT USES ODIN INSPECTOR
+ *          THIS SCRIPT USES GAME EVENTS AND ODIN INSPECTOR
  * 
  *          This class uses an outside enum (ScenesEnum) and
  *          dictionary to change the enum to the scene name...
@@ -29,9 +28,10 @@ public class AdvancedSceneManager : MonoBehaviour
     [Title("Scene Loaders")]
     [SerializeField] private List<SceneLoader> sceneLoaders;
 
-    [Title("Events")]
-    public GameEvent OnStartSceneChange;
-    public GameEvent OnFinishSceneChange;
+    [FoldoutGroup("Events")]
+    public GameEvent        OnSceneChangeBegin;
+    [FoldoutGroup("Events")]
+    public GameEvent        OnSceneChangeEnd;
 
     private Dictionary<Enums.Scenes, SceneLoader> sceneLoadersDict;
 
@@ -39,8 +39,6 @@ public class AdvancedSceneManager : MonoBehaviour
     private SceneLoader     nextSceneLoader;
     private AsyncOperation  operation;
 
-    public bool dontLoad;
-    public bool dontUnload;
     private void Awake()
     {
         sceneLoadersDict = new Dictionary<Enums.Scenes, SceneLoader>();
@@ -51,6 +49,8 @@ public class AdvancedSceneManager : MonoBehaviour
     /// <summary>
     /// Unload all current Scenes and load the next ones.
     /// </summary>
+    [GUIColor(0f, 1f, 0f)]
+    [Button("Change Scenes")]
     public void ChangeScenes(Enums.Scenes nxtScene)
     {
         StartCoroutine(SwitchScenes(nxtScene));
@@ -59,6 +59,8 @@ public class AdvancedSceneManager : MonoBehaviour
     /// <summary>
     /// Unload current scenes and load the next ones, keeping the repeated scenes loaded.
     /// </summary>
+    [GUIColor(0f, 1f, 0f)]
+    [Button("Change Scenes (And keep repeated ones)")]
     public void ChangeAndKeepScenes(Enums.Scenes nxtScene)
     {
         StartCoroutine(SwitchScenes(nxtScene, true));
@@ -66,24 +68,30 @@ public class AdvancedSceneManager : MonoBehaviour
 
     private IEnumerator SwitchScenes(Enums.Scenes nxtScene, bool keepRepeatedScenes = false)
     {
-        nextSceneLoader = sceneLoadersDict[nxtScene];
-        OnStartSceneChange.Invoke();
+        if(!sceneLoadersDict.ContainsKey(nxtScene))
+        {
+            nextSceneLoader                 = ScriptableObject.CreateInstance<SceneLoader>();
+            nextSceneLoader.additiveScenes  = new List<Enums.Scenes>();
+            nextSceneLoader.primaryScene    = nxtScene;
+        }
+        else
+            nextSceneLoader = sceneLoadersDict[nxtScene];
+
+
+        OnSceneChangeBegin.Invoke();
 
         if(currentSceneLoader != null)
             yield return UnloadCurrentScenes(keepRepeatedScenes);
 
         yield return LoadNextScenes(nxtScene);
 
-        currentSceneLoader  = sceneLoadersDict[nxtScene];
+        currentSceneLoader = nextSceneLoader;
         SetActiveScene();
-        OnFinishSceneChange.Invoke();
+        OnSceneChangeEnd.Invoke();
     }
 
     private IEnumerator UnloadCurrentScenes(bool keepRepeatedScenes)
     {
-        if (dontUnload)
-            yield break;
-
         string sceneName    = ConstsScenes.scnEnumToStr[currentSceneLoader.primaryScene];
         operation           = SceneManager.UnloadSceneAsync(sceneName);
         yield return new WaitUntil(() => operation.isDone);
@@ -110,19 +118,17 @@ public class AdvancedSceneManager : MonoBehaviour
 
     private IEnumerator LoadNextScenes(Enums.Scenes nxtScene)
     {
-        if (dontLoad)
-            yield break;
-
         string nxtSceneStr = ConstsScenes.scnEnumToStr[nxtScene];
         operation = SceneManager.LoadSceneAsync(nxtSceneStr, LoadSceneMode.Additive);
         yield return new WaitUntil(() => operation.isDone);
         
-        foreach (Enums.Scenes additiveScene in sceneLoadersDict[nxtScene].additiveScenes)
-        {
-            string nxtAdditiveSceneStr = ConstsScenes.scnEnumToStr[additiveScene];
-            operation = SceneManager.LoadSceneAsync(nxtAdditiveSceneStr, LoadSceneMode.Additive);
-            yield return new WaitUntil(() => operation.isDone);
-        }
+        if(sceneLoadersDict.ContainsKey(nxtScene))
+            foreach (Enums.Scenes additiveScene in sceneLoadersDict[nxtScene].additiveScenes)
+            { 
+                string nxtAdditiveSceneStr = ConstsScenes.scnEnumToStr[additiveScene];
+                operation = SceneManager.LoadSceneAsync(nxtAdditiveSceneStr, LoadSceneMode.Additive);
+                yield return new WaitUntil(() => operation.isDone);
+            }
     }
 
     private void SetActiveScene()
