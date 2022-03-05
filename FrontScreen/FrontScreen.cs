@@ -129,4 +129,14 @@ public class FrontScreen : MonoBehaviour
         curScreen       = defaultScreen;
         image.sprite    = defaultScreen.imageSprite;
     }
+
+    [GUIColor(0f, 1f, 0f)]
+    [Button("Is fade on top of image?")]
+    public void FadeOnTopOfImage(bool fadeOnTop)
+    {
+        if (fadeOnTop)
+            fade.rectTransform.SetAsLastSibling();
+        else
+            fade.rectTransform.SetAsFirstSibling();
+    }
 }
