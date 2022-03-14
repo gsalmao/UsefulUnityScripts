@@ -11,12 +11,15 @@ public class GameEvent : ScriptableObject
 {
     private Action listeners;
     private Action listenersExecuteAndUnsubscribe;
+    private Action tempListener;
 
     public virtual void Invoke()
     {
         listeners?.Invoke();
-        listenersExecuteAndUnsubscribe?.Invoke();
+        
+        tempListener = listenersExecuteAndUnsubscribe;
         listenersExecuteAndUnsubscribe = delegate { };
+        tempListener?.Invoke();
     }
 
     /// <summary>
